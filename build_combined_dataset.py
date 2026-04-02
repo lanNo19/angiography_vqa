@@ -104,6 +104,7 @@ def build_combined_split(
     combined_images_dir: Path,
     min_confidence: float,
     use_symlinks: bool,
+    num_classes: int = 13,
 ) -> dict:
     """Build combined labels for one split.
 
@@ -143,6 +144,16 @@ def build_combined_split(
                     if line:
                         remapped = remap_stenosis_label_line(line)
                         if remapped:
+                            # Validate class ID is within expected range
+                            parts = remapped.split()
+                            cls_id = int(parts[0])
+                            if cls_id < 0 or cls_id >= num_classes:
+                                raise ValueError(
+                                    f"Class ID {cls_id} in {stenosis_label_path} is outside "
+                                    f"expected range [0, {num_classes-1}]. "
+                                    f"Are you reading from unfiltered labels? "
+                                    f"Use stenosis_filtered/ not stenosis/."
+                                )
                             combined_lines.append(remapped)
                             has_stenosis = True
                             stats["stenosis_labels_used"] += 1
@@ -152,6 +163,12 @@ def build_combined_split(
         preds = preds_by_image.get(img_name, [])
         for pred in preds:
             if pred["confidence"] < min_confidence:
+                stats["syntax_predictions_filtered"] += 1
+                continue
+            # Validate predicted class ID is a vessel class (not stenosis)
+            if pred["class_id"] < 0 or pred["class_id"] >= num_classes:
+                print(f"  [WARN] Skipping prediction with class_id={pred['class_id']} "
+                      f"(out of range [0, {num_classes - 1}]) in {img_name}")
                 stats["syntax_predictions_filtered"] += 1
                 continue
             yolo_line = prediction_to_yolo_line(pred)
@@ -263,6 +280,7 @@ def main():
 
     # Build class names
     class_names = build_combined_class_names(config)
+    num_classes = len(class_names)
     print(f"\n  Combined classes ({len(class_names)}):")
     for idx in sorted(class_names.keys()):
         print(f"    {idx:>2d}: {class_names[idx]}")
@@ -302,6 +320,7 @@ def main():
             combined_images_dir=combined_images,
             min_confidence=min_confidence,
             use_symlinks=use_symlinks,
+            num_classes=num_classes,
         )
 
         for k in total_stats:

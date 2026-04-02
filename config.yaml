@@ -47,13 +47,13 @@ augmentation:
   perspective: 0.0
   flipud: 0.5
   fliplr: 0.5
-  mosaic: 0.5
-  mixup: 0.1
+  mosaic: 0.0
+  mixup: 0.0
   copy_paste: 0.0
 
 # === PREPROCESSING ===
 preprocessing:
-  enabled: false
+  enabled: true
   mode: "separate"   # "inplace" or "separate" (separate preserves originals)
   output_dir: "./ARCADE_preprocessed"
   clahe:
@@ -66,7 +66,7 @@ preprocessing:
 
 # === INFERENCE ===
 inference:
-  confidence_threshold: 0.25
+  confidence_threshold: 0.5
   iou_threshold: 0.45
   max_detections: 300
 
@@ -76,7 +76,7 @@ cross_inference:
   stenosis_weights: "./runs/combined/weights/best.pt"
   output_dir: "./runs/cross_inference"
   combined_weights: "./runs/combined/weights/best.pt"
-  splits: ["train", "val", "test"]   # Which splits to run cross-inference on
+  splits: ["train", "val"]   # Which splits to run cross-inference on
 
 # === MASK INTERSECTION ===
 intersection:
@@ -121,7 +121,7 @@ syntax_categories:
 # === COMBINED DATASET (for step 3 of the pipeline) ===
 combined_dataset:
   output_dir: "./arcade/submission/combined"
-  min_confidence: 0.5        # Filter cross-inference predictions below this threshold
+  min_confidence: 0.6        # Filter cross-inference predictions below this threshold
   use_symlinks: true          # Symlink images instead of copying
 
 stenosis_categories:
